@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achievement Hunter - Sistema de Insignias</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="m-0 p-0">
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+
+        const AchievementHunter = () => {
+          const [studentName, setStudentName] = useState('');
+          const [started, setStarted] = useState(false);
+          const [currentStudent, setCurrentStudent] = useState({
+            name: '',
+            badges: [],
+            progress: {}
+          });
+          const [activeChallenge, setActiveChallenge] = useState(null);
+          const [challengeAnswers, setChallengeAnswers] = useState({});
+          const [showResult, setShowResult] = useState(null);
+
+          const badgeCategories = {
+            content: {
+              name: 'Dominio de Contenido',
+              color: 'bg-blue-100 border-blue-500',
+              icon: '📚',
+              badges: [
+                { 
+                  id: 'math_master', 
+                  name: 'Maestro Matemático', 
+                  icon: '🔢',
+                  description: 'Resuelve correctamente 3 desafíos matemáticos',
+                  rarity: 'Rara',
+                  total: 3,
+                  requirement: 'exams_passed',
+                  challenges: [
+                    {
+                      question: 'Si compras 3 libros a $15 cada uno y tienes un cupón de 20% de descuento, ¿cuánto pagas en total?',
+                      options: ['$36', '$45', '$54', '$27'],
+                      correct: 0,
+                      explanation: '3 × $15 = $45. Con 20% descuento: $45 - ($45 × 0.20) = $45 - $9 = $36'
+                    },
+                    {
+                      question: 'Un tren viaja 240 km en 3 horas. ¿Cuál es su velocidad promedio?',
+                      options: ['60 km/h', '80 km/h', '90 km/h', '100 km/h'],
+                      correct: 1,
+                      explanation: 'Velocidad = Distancia ÷ Tiempo = 240 km ÷ 3 h = 80 km/h'
+                    },
+                    {
+                      question: 'En una clase de 40 estudiantes, el 35% son mujeres. ¿Cuántos hombres hay?',
+                      options: ['14', '26', '28', '24'],
+                      correct: 1,
+                      explanation: 'Mujeres: 40 × 0.35 = 14. Hombres: 40 - 14 = 26'
+                    }
+                  ]
+                },
+                { 
+                  id: 'science_guru', 
+                  name: 'Gurú de Ciencias', 
+                  icon: '🔬',
+                  description: 'Completa 3 experimentos mentales de ciencias',
+                  rarity: 'Épica',
+                  total: 3,
+                  requirement: 'experiments_done',
+                  challenges: [
+                    {
+                      question: 'Tienes dos vasos con agua: uno con agua caliente (80°C) y otro con agua fría (20°C). Si los mezclas en partes iguales, la temperatura resultante será aproximadamente:',
+                      options: ['100°C', '60°C', '50°C', '40°C'],
+                      correct: 2,
+                      explanation: 'La temperatura promedio es (80 + 20) ÷ 2 = 50°C'
+                    },
+                    {
+                      question: 'Una planta se coloca en un armario oscuro por una semana. ¿Qué le pasará?',
+                      options: ['Crecerá más rápido', 'Sus hojas se pondrán amarillas', 'Florecerá', 'No cambiará nada'],
+                      correct: 1,
+                      explanation: 'Sin luz solar, la planta no puede hacer fotosíntesis y sus hojas perderán clorofila (se ponen amarillas)'
+                    },
+                    {
+                      question: 'Si sueltas una pluma y una roca al mismo tiempo en la Luna (sin atmósfera), ¿qué sucede?',
+                      options: ['La roca cae primero', 'La pluma cae primero', 'Caen al mismo tiempo', 'Flotan'],
+                      correct: 2,
+                      explanation: 'Sin resistencia del aire, todos los objetos caen a la misma velocidad por gravedad'
+                    }
+                  ]
+                },
+                { 
+                  id: 'language_expert', 
+                  name: 'Experto en Lenguaje', 
+                  icon: '✍️',
+                  description: 'Demuestra dominio en 3 desafíos de lenguaje',
+                  rarity: 'Rara',
+                  total: 3,
+                  requirement: 'essays_written',
+                  challenges: [
+                    {
+                      question: 'Identifica la oración con uso correcto de la coma:',
+                      options: [
+                        'María, mi hermana mayor estudia medicina',
+                        'María mi hermana, mayor estudia medicina',
+                        'María, mi hermana mayor, estudia medicina',
+                        'María mi hermana mayor, estudia medicina'
+                      ],
+                      correct: 2,
+                      explanation: 'La aposición "mi hermana mayor" debe ir entre comas'
+                    },
+                    {
+                      question: '¿Cuál palabra está mal escrita?',
+                      options: ['Exquisito', 'Excepcional', 'Ecxamen', 'Exacto'],
+                      correct: 2,
+                      explanation: 'La forma correcta es "Examen" (sin "c" adicional)'
+                    },
+                    {
+                      question: 'Selecciona el antónimo de "efímero":',
+                      options: ['Breve', 'Permanente', 'Temporal', 'Fugaz'],
+                      correct: 1,
+                      explanation: 'Efímero = que dura poco. Su antónimo es Permanente = que dura mucho o siempre'
+                    }
+                  ]
+                },
+                { 
+                  id: 'history_buff', 
+                  name: 'Historiador', 
+                  icon: '🏛️',
+                  description: 'Analiza correctamente 3 eventos históricos',
+                  rarity: 'Épica',
+                  total: 3,
+                  requirement: 'sources_analyzed',
+                  challenges: [
+                    {
+                      question: 'La Revolución Francesa (1789) buscaba principalmente:',
+                      options: [
+                        'Conquistar otros países',
+                        'Libertad, igualdad y fraternidad',
+                        'Expandir el comercio',
+                        'Aumentar el poder del rey'
+                      ],
+                      correct: 1,
+                      explanation: 'El lema de la Revolución Francesa era "Liberté, Égalité, Fraternité" (Libertad, Igualdad, Fraternidad)'
+                    },
+                    {
+                      question: 'La invención de la imprenta por Gutenberg (1440) fue importante porque:',
+                      options: [
+                        'Permitió imprimir dinero',
+                        'Democratizó el acceso al conocimiento',
+                        'Creó nuevos trabajos',
+                        'Mejoró la economía'
+                      ],
+                      correct: 1,
+                      explanation: 'La imprenta permitió reproducir libros en masa, haciendo el conocimiento accesible a más personas'
+                    },
+                    {
+                      question: 'El Imperio Romano cayó en el año 476 d.C. principalmente por:',
+                      options: [
+                        'Un solo ataque devastador',
+                        'Una combinación de factores: invasiones, economía, corrupción',
+                        'Un terremoto gigante',
+                        'Decisión del emperador'
+                      ],
+                      correct: 1,
+                      explanation: 'La caída de Roma fue gradual, causada por múltiples factores como invasiones bárbaras, crisis económica y política'
+                    }
+                  ]
+                }
+              ]
+            },
+            skills: {
+              name: 'Habilidades Transversales',
+              color: 'bg-purple-100 border-purple-500',
+              icon: '🎯',
+              badges: [
+                { 
+                  id: 'critical_thinker', 
+                  name: 'Pensador Crítico', 
+                  icon: '🧠',
+                  description: 'Resuelve 3 problemas de lógica y razonamiento',
+                  rarity: 'Épica',
+                  total: 3,
+                  requirement: 'problems_solved',
+                  challenges: [
+                    {
+                      question: 'Si todos los Bloops son Razzies y todos los Razzies son Lazzies, entonces:',
+                      options: [
+                        'Todos los Lazzies son Bloops',
+                        'Todos los Bloops son Lazzies',
+                        'Algunos Lazzies son Bloops',
+                        'Ninguno de los anteriores'
+                      ],
+                      correct: 1,
+                      explanation: 'Por transitividad: Bloops → Razzies → Lazzies, entonces todos los Bloops son Lazzies'
+                    },
+                    {
+                      question: 'Tienes 3 cajas: una con manzanas, una con naranjas, y una con ambas. Todas las etiquetas están mal. ¿Cuántas cajas mínimo debes abrir para etiquetarlas correctamente?',
+                      options: ['1 caja', '2 cajas', '3 cajas', 'Es imposible'],
+                      correct: 0,
+                      explanation: 'Abre la caja etiquetada "Mixta". Como todas las etiquetas están mal, sabrás qué contiene realmente y podrás deducir el resto'
+                    },
+                    {
+                      question: 'Un estudio dice: "90% de los accidentes ocurren cerca de casa". ¿Qué conclusión es más acertada?',
+                      options: [
+                        'Conducir lejos de casa es más seguro',
+                        'La gente pasa más tiempo conduciendo cerca de casa',
+                        'Las casas atraen accidentes',
+                        'Debemos mudarnos lejos'
+                      ],
+                      correct: 1,
+                      explanation: 'Correlación no implica causalidad. La mayoría de viajes son locales, por eso hay más accidentes cerca de casa'
+                    }
+                  ]
+                },
+                { 
+                  id: 'pattern_master', 
+                  name: 'Maestro de Patrones', 
+                  icon: '🔢',
+                  description: 'Identifica correctamente 3 patrones complejos',
+                  rarity: 'Rara',
+                  total: 3,
+                  requirement: 'patterns_found',
+                  challenges: [
+                    {
+                      question: '¿Qué número sigue? 2, 6, 12, 20, 30, __',
+                      options: ['40', '42', '44', '46'],
+                      correct: 1,
+                      explanation: 'Patrón: 1×2=2, 2×3=6, 3×4=12, 4×5=20, 5×6=30, 6×7=42'
+                    },
+                    {
+                      question: 'Completa: AB, DE, GH, JK, __',
+                      options: ['LM', 'MN', 'NO', 'OP'],
+                      correct: 1,
+                      explanation: 'Patrón: omite una letra del alfabeto (C, F, I, L), siguiente par es MN'
+                    },
+                    {
+                      question: '¿Qué figura NO pertenece? ▲ ◆ ● ■ ▼',
+                      options: ['▲', '◆', '●', '▼'],
+                      correct: 2,
+                      explanation: 'Todas tienen esquinas excepto el círculo (●)'
+                    }
+                  ]
+                },
+                { 
+                  id: 'innovator', 
+                  name: 'Innovador', 
+                  icon: '💡',
+                  description: 'Propón 3 soluciones creativas a problemas',
+                  rarity: 'Legendaria',
+                  total: 3,
+                  requirement: 'creative_solutions',
+                  challenges: [
+                    {
+                      question: 'Problema: En tu escuela se desperdicia mucha comida en el almuerzo. ¿Cuál es la solución más creativa Y práctica?',
+                      options: [
+                        'Prohibir dejar comida en el plato',
+                        'Permitir porciones personalizables y donar sobras a refugios',
+                        'Castigar a quien desperdicie',
+                        'Servir menos comida a todos'
+                      ],
+                      correct: 1,
+                      explanation: 'Esta solución respeta las necesidades individuales y tiene impacto social positivo'
+                    },
+                    {
+                      question: 'Desafío: Tienes que mover un elefante del punto A al punto B sin que camine. ¿Qué harías?',
+                      options: [
+                        'Es imposible',
+                        'Usar una grúa gigante',
+                        'Mover los puntos A y B al elefante',
+                        'Sedarlo y arrastrarlo'
+                      ],
+                      correct: 2,
+                      explanation: 'Pensamiento lateral: si defines los puntos con el elefante como referencia, el elefante "se mueve" sin moverse'
+                    },
+                    {
+                      question: 'Reto: Necesitas medir exactamente 4 litros usando solo recipientes de 3 y 5 litros. ¿Cómo?',
+                      options: [
+                        'Es imposible',
+                        'Llenar el de 5L, verter en el de 3L, queda 2L. Repetir para sumar 4L',
+                        'Llenar ambos y estimar',
+                        'Usar otro recipiente'
+                      ],
+                      correct: 1,
+                      explanation: 'Llena 5L → vierte en 3L → quedan 2L. Vacía 3L. Vierte los 2L en el de 3L. Llena 5L de nuevo → vierte en 3L hasta llenarlo (1L más) → quedan 4L en el de 5L'
+                    }
+                  ]
+                }
+              ]
+            },
+            attitude: {
+              name: 'Actitud Positiva',
+              color: 'bg-green-100 border-green-500',
+              icon: '⭐',
+              badges: [
+                { 
+                  id: 'perseverance', 
+                  name: 'Perseverante', 
+                  icon: '💪',
+                  description: 'Completa 3 desafíos difíciles sin rendirte',
+                  rarity: 'Épica',
+                  total: 3,
+                  requirement: 'task_redone',
+                  challenges: [
+                    {
+                      question: 'Has fallado un examen importante. La mejor actitud es:',
+                      options: [
+                        'Sentirse mal y darse por vencido',
+                        'Culpar al profesor',
+                        'Analizar errores, pedir ayuda y estudiar diferente',
+                        'Copiar la próxima vez'
+                      ],
+                      correct: 2,
+                      explanation: 'La perseverancia implica aprender de los errores y mejorar estrategias'
+                    },
+                    {
+                      question: 'Un proyecto grupal va mal porque un compañero no colabora. Tú:',
+                      options: [
+                        'Te quejas pero no haces nada',
+                        'Hablas con él/ella para entender y buscar soluciones juntos',
+                        'Lo/la acusas con el profesor',
+                        'Haces todo tú solo/a en silencio'
+                      ],
+                      correct: 1,
+                      explanation: 'La perseverancia en equipo requiere comunicación y resolución de problemas'
+                    },
+                    {
+                      question: 'Llevas 20 intentos en un problema de matemáticas y no sale. ¿Qué haces?',
+                      options: [
+                        'Lo dejas, está muy difícil',
+                        'Pides ayuda y cambias tu enfoque',
+                        'Copias la respuesta',
+                        'Te frustras y no entregas nada'
+                      ],
+                      correct: 1,
+                      explanation: 'Perseverar no es repetir lo mismo esperando resultados diferentes, es buscar nuevos enfoques'
+                    }
+                  ]
+                },
+                { 
+                  id: 'helpful_hero', 
+                  name: 'Héroe Solidario', 
+                  icon: '❤️',
+                  description: 'Demuestra empatía y colaboración en 3 escenarios',
+                  rarity: 'Rara',
+                  total: 3,
+                  requirement: 'peers_helped',
+                  challenges: [
+                    {
+                      question: 'Tu compañero no entendió el tema de hoy y se ve preocupado. Tú:',
+                      options: [
+                        'Le explicas con paciencia usando ejemplos simples',
+                        'Le dices que preste más atención',
+                        'Le pasas tus apuntes y te vas',
+                        'No es tu problema'
+                      ],
+                      correct: 0,
+                      explanation: 'Ayudar genuinamente significa dedicar tiempo y adaptar la explicación a quien la necesita'
+                    },
+                    {
+                      question: 'Nuevo estudiante llega a clase y se sienta solo. Mejor acción:',
+                      options: [
+                        'Ignorarlo, ya tengo mis amigos',
+                        'Acercarte, presentarte y hacerle sentir bienvenido',
+                        'Observar desde lejos',
+                        'Esperar que otros se acerquen primero'
+                      ],
+                      correct: 1,
+                      explanation: 'La solidaridad incluye hacer que otros se sientan incluidos y valorados'
+                    },
+                    {
+                      question: 'En un trabajo grupal, un compañero propone una idea que no te gusta. Respondes:',
+                      options: [
+                        '"Esa idea no sirve"',
+                        '"Interesante. ¿Cómo funcionaría? Yo pensaba en..."',
+                        'La ignoras y hablas de otra cosa',
+                        'Te ríes de la idea'
+                      ],
+                      correct: 1,
+                      explanation: 'Colaborar requiere respeto, escucha activa y construir sobre las ideas de otros'
+                    }
+                  ]
+                },
+                { 
+                  id: 'growth_mindset', 
+                  name: 'Mentalidad de Crecimiento', 
+                  icon: '🌱',
+                  description: 'Demuestra que ves los errores como oportunidades',
+                  rarity: 'Legendaria',
+                  total: 3,
+                  requirement: 'growth_actions',
+                  challenges: [
+                    {
+                      question: '¿Cuál frase refleja mejor mentalidad de crecimiento?',
+                      options: [
+                        '"No soy bueno en matemáticas"',
+                        '"Aún no domino esto, pero puedo mejorar"',
+                        '"Algunos nacen inteligentes, otros no"',
+                        '"Si no lo entiendo rápido, no lo entenderé nunca"'
+                      ],
+                      correct: 1,
+                      explanation: 'Mentalidad de crecimiento: las habilidades se desarrollan con esfuerzo y práctica'
+                    },
+                    {
+                      question: 'Recibes retroalimentación crítica sobre tu trabajo. Tu reacción:',
+                      options: [
+                        'Te ofendes y te pones a la defensiva',
+                        'Agradeces y preguntas cómo mejorar específicamente',
+                        'Sientes que eres un fracaso',
+                        'Piensas que el evaluador tiene algo contra ti'
+                      ],
+                      correct: 1,
+                      explanation: 'Ver la crítica como información valiosa para mejorar es señal de mentalidad de crecimiento'
+                    },
+                    {
+                      question: 'Tu amigo logró algo que tú aún no. Piensas:',
+                      options: [
+                        '"Tiene suerte, yo nunca lo lograré"',
+                        '"Qué estrategia usó? Puedo aprender de eso"',
+                        '"No es justo"',
+                        'Sientes envidia en silencio'
+                      ],
+                      correct: 1,
+                      explanation: 'Celebrar el éxito de otros y aprender de ellos muestra mentalidad de crecimiento'
+                    }
+                  ]
+                }
+              ]
+            }
+          };
+
+          const rarityColors = {
+            'Común': 'bg-gray-200 text-gray-700',
+            'Rara': 'bg-blue-200 text-blue-700',
+            'Épica': 'bg-purple-200 text-purple-700',
+            'Legendaria': 'bg-yellow-200 text-yellow-700'
+          };
+
+          const startChallenge = (badge) => {
+            const progress = getProgress(badge.requirement);
+            if (progress < badge.total && !isBadgeEarned(badge.id)) {
+              setActiveChallenge({
+                badge: badge,
+                currentQuestion: badge.challenges[progress]
+              });
+              setChallengeAnswers({});
+              setShowResult(null);
+            }
+          };
+
+          const submitChallenge = () => {
+            const userAnswer = challengeAnswers[0];
+            const correctAnswer = activeChallenge.currentQuestion.correct;
+            const isCorrect = userAnswer === correctAnswer;
+
+            if (isCorrect) {
+              const requirement = activeChallenge.badge.requirement;
+              const newProgress = getProgress(requirement) + 1;
+              const newProgressObj = { ...currentStudent.progress, [requirement]: newProgress };
+              
+              let newBadges = [...currentStudent.badges];
+              if (newProgress === activeChallenge.badge.total) {
+                newBadges = [...newBadges, activeChallenge.badge.id];
+              }
+              
+              setCurrentStudent({
+                ...currentStudent,
+                progress: newProgressObj,
+                badges: newBadges
+              });
+            }
+
+            setShowResult({
+              correct: isCorrect,
+              explanation: activeChallenge.currentQuestion.explanation
+            });
+          };
+
+          const closeChallenge = () => {
+            setActiveChallenge(null);
+            setChallengeAnswers({});
+            setShowResult(null);
+          };
+
+          const startApp = () => {
+            if (studentName.trim()) {
+              setCurrentStudent({
+                name: studentName,
+                badges: [],
+                progress: {}
+              });
+              setStarted(true);
+            }
+          };
+
+          const getProgress = (requirement) => {
+            return currentStudent.progress[requirement] || 0;
+          };
+
+          const isBadgeEarned = (badgeId) => {
+            return currentStudent.badges.includes(badgeId);
+          };
+
+          const getTotalBadges = () => {
+            return currentStudent.badges.length;
+          };
+
+          const getAllBadgesCount = () => {
+            return Object.values(badgeCategories).reduce((sum, cat) => sum + cat.badges.length, 0);
+          };
+
+          const getCategoryProgress = (categoryKey) => {
+            const category = badgeCategories[categoryKey];
+            const earned = category.badges.filter(b => isBadgeEarned(b.id)).length;
+            return { earned, total: category.badges.length };
+          };
+
+          // Pantalla de desafío activo
+          if (activeChallenge) {
+            const question = activeChallenge.currentQuestion;
+            return (
+              <div className="min-h-screen bg-gradient-to-br from-indigo-100 to-purple-100 p-6 flex items-center justify-center">
+                <div className="max-w-3xl w-full bg-white rounded-2xl shadow-2xl p-8">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      <span className="text-5xl">{activeChallenge.badge.icon}</span>
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-800">{activeChallenge.badge.name}</h2>
+                        <p className="text-sm text-gray-600">
+                          Desafío {getProgress(activeChallenge.badge.requirement) + 1} de {activeChallenge.badge.total}
+                        </p>
+                      </div>
+                    </div>
+                    <button onClick={closeChallenge} className="text-gray-400 hover:text-gray-600 text-3xl">
+                      ×
+                    </button>
+                  </div>
+
+                  {!showResult ? (
+                    <>
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
+                        <p className="text-lg text-gray-800 font-semibold">{question.question}</p>
+                      </div>
+
+                      <div className="space-y-3 mb-6">
+                        {question.options.map((option, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setChallengeAnswers({ 0: index })}
+                            className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                              challengeAnswers[0] === index
+                                ? 'bg-purple-100 border-purple-500 font-bold'
+                                : 'bg-white border-gray-300 hover:border-purple-300'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={submitChallenge}
+                        disabled={challengeAnswers[0] === undefined}
+                        className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        Enviar Respuesta
+                      </button>
+                    </>
+                  ) : (
+                    <div className={`p-6 rounded-lg ${showResult.correct ? 'bg-green-50 border-2 border-green-500' : 'bg-red-50 border-2 border-red-500'}`}>
+                      <h3 className={`text-2xl font-bold mb-4 ${showResult.correct ? 'text-green-700' : 'text-red-700'}`}>
+                        {showResult.correct ? '¡Correcto! 🎉' : 'Incorrecto 😔'}
+                      </h3>
+                      <div className="bg-white rounded-lg p-4 mb-4">
+                        <p className="font-semibold text-gray-700 mb-2">Explicación:</p>
+                        <p className="text-gray-600">{showResult.explanation}</p>
+                      </div>
+                      {showResult.correct && getProgress(activeChallenge.badge.requirement) === activeChallenge.badge.total && (
+                        <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-4xl">🏆</span>
+                            <div>
+                              <p className="font-bold text-lg text-yellow-800">¡Insignia Desbloqueada!</p>
+                              <p className="text-sm text-yellow-700">Has ganado: {activeChallenge.badge.name}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        onClick={closeChallenge}
+                        className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-all"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          if (!started) {
+            return (
+              <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-orange-100 to-red-100 p-6">
+                <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-8">
+                  <div className="text-center mb-8">
+                    <div className="text-6xl mb-4">🏆</div>
+                    <h1 className="text-4xl font-bold text-gray-800 mb-2">Achievement Hunter</h1>
+                    <p className="text-gray-600 text-lg">Completa desafíos reales para ganar insignias</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-gray-700 font-bold mb-2">Tu Nombre</label>
+                      <input
+                        type="text"
+                        value={studentName}
+                        onChange={(e) => setStudentName(e.target.value)}
+                        placeholder="Escribe tu nombre completo"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:
+                      focus:border-yellow-500 outline-none text-lg"
+                      />
+                    </div>
+
+                    <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                      <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <span>⭐</span>
+                        Cómo Funciona
+                      </h3>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>✓ Cada insignia requiere completar 3 desafíos</li>
+                        <li>✓ Los desafíos son preguntas reales y educativas</li>
+                        <li>✓ Debes responder correctamente para avanzar</li>
+                        <li>✓ Recibes explicaciones detalladas</li>
+                      </ul>
+                    </div>
+
+                    <button
+                      onClick={startApp}
+                      disabled={!studentName.trim()}
+                      className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold py-4 rounded-lg hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-lg active:scale-95"
+                    >
+                      ¡Comenzar Desafíos!
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          const progressPercent = (getTotalBadges() / getAllBadgesCount()) * 100;
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-6">
+              <div className="max-w-7xl mx-auto">
+                <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                  <div className="flex justify-between items-center flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                        {currentStudent.name[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <h1 className="text-3xl font-bold text-gray-800">{currentStudent.name}</h1>
+                        <p className="text-gray-600">Colección de Logros</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-4xl font-bold text-yellow-600">
+                        {getTotalBadges()}/{getAllBadgesCount()}
+                      </div>
+                      <p className="text-sm text-gray-600">Insignias Desbloqueadas</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="w-full bg-gray-200 rounded-full h-4">
+                      <div 
+                        className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-500"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 text-center">
+                      {progressPercent.toFixed(1)}% completado
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6 mb-6">
+                  {Object.entries(badgeCategories).map(([key, category]) => {
+                    const { earned, total } = getCategoryProgress(key);
+                    return (
+                      <div key={key} className={`${category.color} rounded-2xl shadow-lg p-6 border-2`}>
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className="text-4xl">{category.icon}</span>
+                          <div>
+                            <h3 className="font-bold text-lg">{category.name}</h3>
+                            <p className="text-sm text-gray-600">{earned}/{total} desbloqueadas</p>
+                          </div>
+                        </div>
+                        <div className="w-full bg-white bg-opacity-50 rounded-full h-3">
+                          <div 
+                            className="h-full bg-gray-800 rounded-full transition-all duration-300"
+                            style={{ width: `${(earned / total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {Object.entries(badgeCategories).map(([categoryKey, category]) => (
+                  <div key={categoryKey} className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                      <span className="text-3xl">{category.icon}</span>
+                      {category.name}
+                    </h2>
+                    
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {category.badges.map(badge => {
+                        const isEarned = isBadgeEarned(badge.id);
+                        const progress = getProgress(badge.requirement);
+                        const progressPercent = (progress / badge.total) * 100;
+
+                        return (
+                          <div
+                            key={badge.id}
+                            className={`p-5 rounded-xl border-2 transition-all ${
+                              isEarned 
+                                ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-400 shadow-lg' 
+                                : 'bg-gray-50 border-gray-300'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="text-5xl">{badge.icon}</div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-bold ${rarityColors[badge.rarity]}`}>
+                                {badge.rarity}
+                              </span>
+                            </div>
+                            
+                            <h3 className="font-bold text-lg mb-2">{badge.name}</h3>
+                            <p className="text-sm text-gray-600 mb-3">{badge.description}</p>
+                            
+                            {!isEarned && (
+                              <>
+                                <div className="mb-3">
+                                  <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                    <span>Progreso</span>
+                                    <span className="font-bold">{progress}/{badge.total} desafíos</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                                      style={{ width: `${progressPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <button
+                                  onClick={() => startChallenge(badge)}
+                                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                  <span>🎯</span>
+                                  Iniciar Desafío {progress + 1}
+                                </button>
+                              </>
+                            )}
+                            
+                            {isEarned && (
+                              <div className="flex items-center justify-center gap-2 text-green-600 font-bold mt-2 bg-green-50 py-3 rounded-lg">
+                                <span>🏆</span>
+                                ¡Desbloqueada!
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AchievementHunter />);
+    </script>
+</body>
+</html>
